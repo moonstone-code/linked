@@ -1,0 +1,100 @@
+{% extends 'base.html' %}
+
+{% block title %}Attendance Management{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="mb-0">Attendance Management</h2>
+    <a class="btn btn-outline-primary" href="{% url 'teacher_attendance_history' %}">
+        <i class="bi bi-clock-history me-1"></i>Attendance History
+    </a>
+</div>
+
+<div class="card shadow-sm mb-3">
+    <div class="card-body">
+        <form method="get" class="row g-3 align-items-end">
+            <div class="col-12 col-md-5">
+                <label for="assignmentSelect" class="form-label">Assignment</label>
+                <select name="assignment_id" id="assignmentSelect" class="form-select" required>
+                    <option value="">— Select Assignment —</option>
+                    {% for assignment in assignments %}
+                    <option value="{{ assignment.assignment_id }}" {% if selected_assignment and selected_assignment.assignment_id == assignment.assignment_id %}selected{% endif %}>
+                        {{ assignment.class_field.class_name }} - {{ assignment.section_field.section_name }} ({{ assignment.subject_field.subject_name }})
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-12 col-md-3">
+                <label for="attendanceDate" class="form-label">Date</label>
+                <input type="date" id="attendanceDate" name="attendance_date" class="form-control" value="{{ selected_date }}" required>
+            </div>
+            <div class="col-12 col-md-2">
+                <button class="btn btn-primary w-100" type="submit">Load</button>
+            </div>
+            <div class="col-12 col-md-2">
+                <a class="btn btn-outline-secondary w-100" href="{% url 'teacher_attendance_manage' %}">Reset</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% if selected_assignment %}
+<div class="card shadow-sm">
+    <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+        <strong>{{ selected_assignment.class_field.class_name }} - {{ selected_assignment.section_field.section_name }}</strong>
+        <span class="text-muted small">{{ selected_assignment.subject_field.subject_name }}</span>
+    </div>
+    <div class="card-body p-0 table-responsive">
+        <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="assignment_id" value="{{ selected_assignment.assignment_id }}">
+            <input type="hidden" name="attendance_date" value="{{ selected_date }}">
+            <table class="table table-hover mb-0">
+                <thead class="table-dark">
+                    <tr>
+                        <th>#</th>
+                        <th>Student</th>
+                        <th>Admission No</th>
+                        <th>Roll No</th>
+                        <th style="width: 180px;">Status</th>
+                        <th>Remarks</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for student in students %}
+                    <tr>
+                        <td>{{ forloop.counter }}</td>
+                        <td>{{ student.first_name }} {{ student.last_name }}</td>
+                        <td>{{ student.admission_no }}</td>
+                        <td>{{ student.roll_no|default:'—' }}</td>
+                        <td>
+                            <select class="form-select form-select-sm" name="status_{{ student.student_id }}">
+                                <option value="">— Select —</option>
+                                <option value="Present" {% if student.current_status == 'Present' %}selected{% endif %}>Present</option>
+                                <option value="Absent" {% if student.current_status == 'Absent' %}selected{% endif %}>Absent</option>
+                                <option value="Leave" {% if student.current_status == 'Leave' %}selected{% endif %}>Leave</option>
+                            </select>
+                        </td>
+                        <td>
+                            <input type="text" class="form-control form-control-sm" name="remarks_{{ student.student_id }}" maxlength="255" value="{{ student.current_remarks }}" placeholder="Optional remarks">
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center text-muted py-4">No students found for selected assignment.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% if students %}
+            <div class="p-3 text-end border-top bg-light">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-save me-1"></i>Save Attendance
+                </button>
+            </div>
+            {% endif %}
+        </form>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

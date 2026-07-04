@@ -1,0 +1,76 @@
+{% extends 'base.html' %}
+
+{% block title %}Teacher Dashboard{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="mb-0 fw-bold">Welcome, {{ teacher.name }}</h2>
+        <small class="text-muted">Here is your teaching overview for today.</small>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-12 col-md-6 col-xl-3">
+        <div class="card shadow-sm h-100">
+            <div class="card-body">
+                <p class="text-muted small mb-1">My Class</p>
+                <h3 class="mb-0 text-primary">{{ assignments_count }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-md-6 col-xl-3">
+        <div class="card shadow-sm h-100">
+            <div class="card-body">
+                <p class="text-muted small mb-1">My Students</p>
+                <h3 class="mb-0 text-success">{{ students_count }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-md-6 col-xl-3">
+        <div class="card shadow-sm h-100">
+            <div class="card-body">
+                <p class="text-muted small mb-1">Today's Attendance Records</p>
+                <h3 class="mb-0 text-warning">{{ today_attendance_count }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-md-6 col-xl-3">
+        <div class="card shadow-sm h-100">
+            <div class="card-body">
+                <p class="text-muted small mb-1">Present / Absent / Leave</p>
+                <h5 class="mb-0">
+                    <span class="text-success">{{ present_count }}</span>
+                    /
+                    <span class="text-danger">{{ absent_count }}</span>
+                    /
+                    <span class="text-secondary">{{ leave_count }}</span>
+                </h5>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-body">
+        <h6 class="mb-3">Quick Actions</h6>
+        <div class="d-flex flex-wrap gap-2">
+            <a class="btn btn-outline-primary btn-sm" href="{% url 'teacher_my_assignments' %}">
+                <i class="bi bi-journal-check me-1"></i>My Class
+            </a>
+            <a class="btn btn-outline-primary btn-sm" href="{% url 'teacher_my_students' %}">
+                <i class="bi bi-people me-1"></i>My Students
+            </a>
+            <a class="btn btn-outline-primary btn-sm" href="{% url 'teacher_attendance_manage' %}">
+                <i class="bi bi-check2-square me-1"></i>Mark Attendance
+            </a>
+            <a class="btn btn-outline-primary btn-sm" href="{% url 'teacher_attendance_history' %}">
+                <i class="bi bi-clock-history me-1"></i>Attendance History
+            </a>
+            <a class="btn btn-outline-primary btn-sm" href="{% url 'teacher_profile' %}">
+                <i class="bi bi-person-circle me-1"></i>My Profile
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

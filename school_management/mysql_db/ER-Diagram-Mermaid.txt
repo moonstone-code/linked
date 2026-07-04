@@ -1,0 +1,119 @@
+erDiagram
+    %% Entities and Attributes
+
+    User {
+        int user_id PK
+        string username
+        string password_hash
+        string role 
+        int reference_id FK 
+    }
+
+    SchoolClass {
+        int class_id PK
+        string class_name
+    }
+
+    Section {
+        int section_id PK
+        int class_id FK
+        string section_name
+    }
+
+    Subject {
+        int subject_id PK
+        string subject_name
+    }
+
+    Teacher {
+        int teacher_id PK
+        string name
+        string mobile
+        string email
+    }
+
+    TeacherAssignment {
+        int assignment_id PK
+        int teacher_id FK
+        int class_id FK
+        int section_id FK
+        int subject_id FK
+    }
+
+    Parent {
+        int parent_id PK
+        string father_name
+        string mother_name
+        string mobile
+        string email
+        string address
+    }
+
+    Student {
+        int student_id PK
+        string admission_no
+        string first_name
+        string last_name
+        date dob
+        string gender
+        int class_id FK
+        int section_id FK
+        int parent_id FK
+        string roll_no
+        string status
+    }
+
+    Attendance {
+        int attendance_id PK
+        int student_id FK
+        date date
+        string status 
+        string remarks
+    }
+
+    FeeStructure {
+        int fee_structure_id PK
+        int class_id FK
+        string academic_year
+        float tuition_fee
+        float activity_fee
+        float transport_fee
+        float other_fee
+        float total_fee
+    }
+
+    StudentFee {
+        int student_fee_id PK
+        int student_id FK
+        int fee_structure_id FK
+        float total_amount
+        float paid_amount
+        float pending_amount
+        string status 
+        date last_payment_date
+    }
+
+    %% Core Academic Relationships
+    SchoolClass ||--o{ Section : "contains"
+    SchoolClass ||--o{ Student : "enrolls"
+    Section ||--o{ Student : "contains"
+    
+    %% Teacher & Assignment Relationships
+    Teacher ||--o{ TeacherAssignment : "has"
+    SchoolClass ||--o{ TeacherAssignment : "receives"
+    Section ||--o{ TeacherAssignment : "receives"
+    Subject ||--o{ TeacherAssignment : "is taught in"
+
+    %% Student Management Relationships
+    Parent ||--o{ Student : "parent of (1 to N)"
+    Student ||--o{ Attendance : "records"
+
+    %% Fee Management Relationships
+    SchoolClass ||--o{ FeeStructure : "defines base fee"
+    FeeStructure ||--o{ StudentFee : "generates"
+    Student ||--o{ StudentFee : "owes / pays"
+
+    %% Authentication & Role Mapping (Polymorphic)
+    User |o--o| Teacher : "references (role=Teacher)"
+    User |o--o| Parent : "references (role=Parent)"
+    User |o--o| Student : "references (role=Student)"

@@ -1,0 +1,610 @@
+{% extends 'base.html' %}
+
+{% block title %}Student Fees{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="mb-0">Student Fees</h2>
+    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addStudentFeeModal">
+        <i class="bi bi-plus-lg me-1"></i> Add Student Fee
+    </button>
+</div>
+
+{# Search #}
+<form method="get" class="mb-3">
+    <div class="input-group" style="max-width: 500px;">
+        <input type="text" name="q" class="form-control" placeholder="Search student or academic year…" value="{{ search_q }}">
+        <button class="btn btn-outline-secondary" type="submit"><i class="bi bi-search"></i></button>
+        {% if search_q %}
+            <a href="{% url 'student_fee_list' %}" class="btn btn-outline-danger"><i class="bi bi-x-lg"></i></a>
+        {% endif %}
+    </div>
+</form>
+
+{# Table #}
+<div class="card shadow-sm">
+    <div class="card-body p-0 table-responsive">
+        <table class="table table-hover mb-0">
+            <thead class="table-dark">
+                <tr>
+                    <th>#</th>
+                    <th>Student</th>
+                    <th>Academic Year</th>
+                    <th class="text-end">Total Amount</th>
+                    <th class="text-end">Paid Amount</th>
+                    <th class="text-end">Pending</th>
+                    <th>Status</th>
+                    <th>Last Payment</th>
+                    <th>Ref. File</th>
+                    <th class="text-end">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for fee in page_obj %}
+                <tr>
+                    <td>{{ forloop.counter|add:page_obj.start_index|add:"-1" }}</td>
+                    <td>{{ fee.student_field.first_name }} {{ fee.student_field.last_name }}</td>
+                    <td>{{ fee.fee_structure_field.academic_year }}</td>
+                    <td class="text-end">₹{{ fee.total_amount }}</td>
+                    <td class="text-end text-success">₹{{ fee.paid_amount }}</td>
+                    <td class="text-end text-warning">₹{{ fee.pending_amount }}</td>
+                    <td>
+                        {% if fee.status == 'Paid' %}
+                            <span class="badge bg-success">Paid</span>
+                        {% elif fee.status == 'Partial' %}
+                            <span class="badge bg-warning text-dark">Partial</span>
+                        {% else %}
+                            <span class="badge bg-danger">Pending</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ fee.last_payment_date|default:"—" }}</td>
+                    <td>
+                        {% if fee.ref_file_path %}
+                            <a href="/media/{{ fee.ref_file_path }}" target="_blank" class="btn btn-sm btn-outline-secondary" title="{{ fee.ref_file_name }}">
+                                <i class="bi bi-file-earmark-arrow-down"></i>
+                            </a>
+                        {% else %}
+                            <span class="text-muted small">—</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-end">
+                        <button class="btn btn-sm btn-outline-primary me-1"
+                                data-bs-toggle="modal"
+                                data-bs-target="#editStudentFeeModal"
+                                data-id="{{ fee.student_fee_id }}"
+                                data-student="{{ fee.student_field.student_id }}"
+                                data-structure="{{ fee.fee_structure_field.fee_structure_id }}"
+                                data-total="{{ fee.total_amount }}"
+                                data-paid="{{ fee.paid_amount }}"
+                                data-status="{{ fee.status }}"
+                                data-ref-file-path="{{ fee.ref_file_path|default:'' }}"
+                                data-ref-file-name="{{ fee.ref_file_name|default:'' }}"
+                                {% with last_payment=fee.all_payments.0 %}
+                                data-payment-date="{{ last_payment.payment_date|default:'' }}"
+                                data-payment-method="{{ last_payment.payment_method|default:'' }}"
+                                data-transaction-ref="{{ last_payment.transaction_ref|default:'' }}"
+                                {% endwith %}>
+                            <i class="bi bi-pencil"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger"
+                                data-bs-toggle="modal"
+                                data-bs-target="#deleteStudentFeeModal"
+                                data-id="{{ fee.student_fee_id }}"
+                                data-label="{{ fee.student_field.first_name }} {{ fee.student_field.last_name }} – {{ fee.fee_structure_field.academic_year }}">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="10" class="text-center text-muted py-4">
+                        {% if search_q %}No student fees found for "<strong>{{ search_q }}</strong>".{% else %}No student fees added yet.{% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{# Pagination #}
+{% if page_obj.has_other_pages %}
+<nav class="mt-3">
+    <ul class="pagination pagination-sm">
+        {% if page_obj.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search_q %}&q={{ search_q }}{% endif %}">‹ Prev</a>
+            </li>
+        {% endif %}
+        {% for num in page_obj.paginator.page_range %}
+            <li class="page-item {% if num == page_obj.number %}active{% endif %}">
+                <a class="page-link" href="?page={{ num }}{% if search_q %}&q={{ search_q }}{% endif %}">{{ num }}</a>
+            </li>
+        {% endfor %}
+        {% if page_obj.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search_q %}&q={{ search_q }}{% endif %}">Next ›</a>
+            </li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+
+
+{# ── ADD MODAL ─────────────────────────────────────────────────────────── #}
+<div class="modal fade" id="addStudentFeeModal" tabindex="-1" aria-labelledby="addStudentFeeModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable">
+        <form method="post" action="{% url 'student_fee_list' %}" enctype="multipart/form-data">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="add">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addStudentFeeModalLabel">Add New Student Fee</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="id_student_field" class="form-label">Student</label>
+                        <select class="form-select" id="id_student_field" name="student_field" required>
+                            <option value="">— Select Student —</option>
+                            {% for student in all_students %}
+                                <option value="{{ student.student_id }}">{{ student.first_name }} {{ student.last_name }} ({{ student.admission_no }})</option>
+                            {% endfor %}
+                        </select>
+                        {% if add_form.student_field.errors %}
+                            <div class="text-danger small mt-1">{{ add_form.student_field.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        <label for="id_fee_structure_field" class="form-label">Fee Structure</label>
+                        <select class="form-select" id="id_fee_structure_field" name="fee_structure_field" required>
+                            <option value="">— Select Fee Structure —</option>
+                            {% for fee_struct in all_fee_structures %}
+                                <option value="{{ fee_struct.fee_structure_id }}" data-total="{{ fee_struct.total_fee }}">{{ fee_struct.class_field.class_name }} – {{ fee_struct.academic_year }}</option>
+                            {% endfor %}
+                        </select>
+                        {% if add_form.fee_structure_field.errors %}
+                            <div class="text-danger small mt-1">{{ add_form.fee_structure_field.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        <label for="id_total_amount" class="form-label">Total Amount</label>
+                        <input type="number" class="form-control" id="id_total_amount" name="total_amount" step="0.01" readonly required>
+                        {% if add_form.total_amount.errors %}
+                            <div class="text-danger small mt-1">{{ add_form.total_amount.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        <label for="addStudentFeePending" class="form-label">Pending Amount</label>
+                        <input type="number" class="form-control" id="addStudentFeePending" name="pending_display" step="0.01" readonly disabled>
+                        <small class="text-muted">Amount remaining after previous payments</small>
+                    </div>
+                    <div class="mb-3">
+                        <label for="id_paid_amount" class="form-label">Paid Amount</label>
+                        <input type="number" class="form-control" id="id_paid_amount" name="paid_amount" step="0.01" required>
+                        {% if add_form.paid_amount.errors %}
+                            <div class="text-danger small mt-1">{{ add_form.paid_amount.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        <label for="id_payment_date" class="form-label">Payment Date</label>
+                        <input type="date" class="form-control" id="id_payment_date" name="payment_date" value="{{ add_form.payment_date.value|default:'' }}">
+                        {% if add_form.payment_date.errors %}
+                            <div class="text-danger small mt-1">{{ add_form.payment_date.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        <label for="id_payment_method" class="form-label">Payment Method</label>
+                        <select class="form-select" id="id_payment_method" name="payment_method">
+                            <option value="">— Select Method —</option>
+                            <option value="Cash" {% if add_form.data.payment_method == 'Cash' %}selected{% endif %}>Cash</option>
+                            <option value="UPI" {% if add_form.data.payment_method == 'UPI' %}selected{% endif %}>UPI</option>
+                            <option value="Card" {% if add_form.data.payment_method == 'Card' %}selected{% endif %}>Card</option>
+                            <option value="Bank" {% if add_form.data.payment_method == 'Bank' %}selected{% endif %}>Bank</option>
+                        </select>
+                        {% if add_form.payment_method.errors %}
+                            <div class="text-danger small mt-1">{{ add_form.payment_method.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        <label for="id_transaction_ref" class="form-label">Transaction Reference</label>
+                        <input type="text" class="form-control" id="id_transaction_ref" name="transaction_ref" value="{{ add_form.data.transaction_ref|default:'' }}" placeholder="Optional">
+                        {% if add_form.transaction_ref.errors %}
+                            <div class="text-danger small mt-1">{{ add_form.transaction_ref.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        <label for="id_payment_reference_file" class="form-label">Payment Reference File</label>
+                        <input type="file" id="id_payment_reference_file" name="payment_reference_file" accept=".pdf,.jpg,.jpeg,.png,.gif,.webp,.doc,.docx,.xls,.xlsx,.zip" required>
+                        <small class="text-muted d-block mt-2">Minimum file size: 1 MB. Accepted formats: PDF, JPG, PNG, DOC, XLS, ZIP</small>
+                        {% if add_form.payment_reference_file.errors %}
+                            <div class="text-danger small mt-1"><i class="bi bi-exclamation-circle me-1"></i>{{ add_form.payment_reference_file.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        <label for="id_status" class="form-label">Status</label>
+                        <select class="form-select" id="id_status" name="status" required>
+                            <option value="Pending">Pending</option>
+                            <option value="Partial">Partial</option>
+                            <option value="Paid">Paid</option>
+                        </select>
+                        {% if add_form.status.errors %}
+                            <div class="text-danger small mt-1"><i class="bi bi-exclamation-circle me-1"></i>{{ add_form.status.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                    {% if add_form.non_field_errors %}
+                        <div class="text-danger small">{{ add_form.non_field_errors.0 }}</div>
+                    {% endif %}
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Student Fee</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+
+{# ── EDIT MODAL ────────────────────────────────────────────────────────── #}
+<div class="modal fade" id="editStudentFeeModal" tabindex="-1" aria-labelledby="editStudentFeeModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable">
+        <form method="post" id="editStudentFeeForm" action="" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editStudentFeeModalLabel">Edit Student Fee</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="editStudentFeeStudent" class="form-label">Student</label>
+                        <select class="form-select" id="editStudentFeeStudent" name="student_field" required>
+                            <option value="">— Select Student —</option>
+                            {% for student in all_students %}
+                                <option value="{{ student.student_id }}">{{ student.first_name }} {{ student.last_name }} ({{ student.admission_no }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editStudentFeeStructure" class="form-label">Fee Structure</label>
+                        <select class="form-select" id="editStudentFeeStructure" name="fee_structure_field" required>
+                            <option value="">— Select Fee Structure —</option>
+                            {% for fee_struct in all_fee_structures %}
+                                <option value="{{ fee_struct.fee_structure_id }}" data-total="{{ fee_struct.total_fee }}">{{ fee_struct.class_field.class_name }} – {{ fee_struct.academic_year }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editStudentFeeTotal" class="form-label">Total Amount</label>
+                        <input type="number" class="form-control" id="editStudentFeeTotal" name="total_amount" step="0.01" readonly required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editStudentFeePending" class="form-label">Pending Amount</label>
+                        <input type="number" class="form-control" id="editStudentFeePending" name="pending_display" step="0.01" readonly disabled>
+                        <small class="text-muted">Amount remaining after previous payments</small>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editStudentFeePaid" class="form-label">Paid Amount</label>
+                        <input type="number" class="form-control" id="editStudentFeePaid" name="paid_amount" step="0.01" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editStudentFeePaymentDate" class="form-label">Payment Date</label>
+                        <input type="date" class="form-control" id="editStudentFeePaymentDate" name="payment_date">
+                    </div>
+                    <div class="mb-3">
+                        <label for="editStudentFeePaymentMethod" class="form-label">Payment Method</label>
+                        <select class="form-select" id="editStudentFeePaymentMethod" name="payment_method">
+                            <option value="">— Select Method —</option>
+                            <option value="Cash">Cash</option>
+                            <option value="UPI">UPI</option>
+                            <option value="Card">Card</option>
+                            <option value="Bank">Bank</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editStudentFeeTransactionRef" class="form-label">Transaction Reference</label>
+                        <input type="text" class="form-control" id="editStudentFeeTransactionRef" name="transaction_ref" placeholder="Optional">
+                    </div>
+                    <div class="mb-3">
+                        <label for="editStudentFeeReferenceFile" class="form-label">Payment Reference File</label>
+                        <input type="file" id="editStudentFeeReferenceFile" name="payment_reference_file" accept=".pdf,.jpg,.jpeg,.png,.gif,.webp,.doc,.docx,.xls,.xlsx,.zip">
+                        <small class="text-muted d-block mt-2">Minimum file size: 1 MB. Accepted formats: PDF, JPG, PNG, DOC, XLS, ZIP</small>
+                    </div>
+                    <div class="mb-3" id="editCurrentFileContainer" style="display:none;">
+                        <label class="form-label mb-1">Current File</label>
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <a id="editCurrentFileLink" href="#" target="_blank" class="btn btn-sm btn-outline-secondary">
+                                <i class="bi bi-file-earmark me-1"></i><span id="editCurrentFileName">View file</span>
+                            </a>
+                            <small class="text-muted">Click to open uploaded reference</small>
+                        </div>
+                        <div class="alert alert-warning py-1 px-2 small mb-0">
+                            <i class="bi bi-exclamation-triangle-fill me-1"></i>Upload only to replace existing file.
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editStudentFeeStatus" class="form-label">Status</label>
+                        <select class="form-select" id="editStudentFeeStatus" name="status" required>
+                            <option value="Pending">Pending</option>
+                            <option value="Partial">Partial</option>
+                            <option value="Paid">Paid</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Update Student Fee</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+
+{# ── DELETE MODAL ──────────────────────────────────────────────────────── #}
+<div class="modal fade" id="deleteStudentFeeModal" tabindex="-1" aria-labelledby="deleteStudentFeeModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-sm">
+        <form method="post" id="deleteStudentFeeForm" action="">
+            {% csrf_token %}
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title" id="deleteStudentFeeModalLabel">Delete Student Fee</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    Are you sure you want to delete the fee record for <strong id="deleteStudentFeeLabel"></strong>?
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+
+{% block extra_js %}
+<script>
+    var addModalEl = document.getElementById('addStudentFeeModal');
+    var editModalEl = document.getElementById('editStudentFeeModal');
+    var deleteModalEl = document.getElementById('deleteStudentFeeModal');
+
+    var addFormEl = addModalEl ? addModalEl.querySelector('form') : null;
+    var editFormEl = document.getElementById('editStudentFeeForm');
+    var deleteFormEl = document.getElementById('deleteStudentFeeForm');
+
+    var addStudentSelect = document.getElementById('id_student_field');
+    var addStructureSelect = document.getElementById('id_fee_structure_field');
+    var addTotalInput = document.getElementById('id_total_amount');
+    var addPendingInput = document.getElementById('addStudentFeePending');
+
+    var editStudentSelect = document.getElementById('editStudentFeeStudent');
+    var editStructureSelect = document.getElementById('editStudentFeeStructure');
+    var editTotalInput = document.getElementById('editStudentFeeTotal');
+    var editPendingInput = document.getElementById('editStudentFeePending');
+    var addPaymentDateInput = document.getElementById('id_payment_date');
+    var editPaymentDateInput = document.getElementById('editStudentFeePaymentDate');
+
+    function getTodayIsoDate() {
+        var now = new Date();
+        var month = String(now.getMonth() + 1).padStart(2, '0');
+        var day = String(now.getDate()).padStart(2, '0');
+        return now.getFullYear() + '-' + month + '-' + day;
+    }
+
+    function setDefaultPaymentDate(inputEl) {
+        if (inputEl && !inputEl.value) {
+            inputEl.value = getTodayIsoDate();
+        }
+    }
+
+    function clearFieldValue(fieldEl) {
+        if (fieldEl) {
+            fieldEl.value = '';
+        }
+    }
+
+    function fetchPendingAmount(studentId, feeStructureId, pendingDisplayInputId) {
+        if (!studentId || !feeStructureId) {
+            clearFieldValue(document.getElementById(pendingDisplayInputId));
+            return;
+        }
+
+        fetch('/api/student-pending-amount/?student_id=' + studentId + '&fee_structure_id=' + feeStructureId)
+            .then(function (response) { return response.json(); })
+            .then(function (data) {
+                var pendingEl = document.getElementById(pendingDisplayInputId);
+                if (data.error) {
+                    clearFieldValue(pendingEl);
+                    return;
+                }
+                if (pendingEl) {
+                    pendingEl.value = Number(data.pending_amount).toFixed(2);
+                }
+            })
+            .catch(function () {
+                clearFieldValue(document.getElementById(pendingDisplayInputId));
+            });
+    }
+
+    function setTotalFromStructure(selectEl, totalInputEl) {
+        if (!selectEl || !totalInputEl) {
+            return;
+        }
+        var selected = selectEl.options[selectEl.selectedIndex];
+        var total = selected ? selected.getAttribute('data-total') : '';
+        totalInputEl.value = total || '';
+    }
+
+    function autoCompleteStudentFeeStructure(studentId, feeStructureSelectId) {
+        if (!studentId) {
+            return;
+        }
+        fetch('/api/student-fee-structure/?student_id=' + studentId)
+            .then(function (response) { return response.json(); })
+            .then(function (data) {
+                if (data.error) {
+                    return;
+                }
+                var selectEl = document.getElementById(feeStructureSelectId);
+                if (selectEl) {
+                    selectEl.value = String(data.fee_structure_id);
+                    selectEl.dispatchEvent(new Event('change'));
+                }
+            })
+            .catch(function () {
+                // Keep current selection if auto-complete API fails.
+            });
+    }
+
+    function resetAddModalForm() {
+        if (addFormEl) {
+            addFormEl.reset();
+        }
+        clearFieldValue(addTotalInput);
+        clearFieldValue(addPendingInput);
+        setDefaultPaymentDate(addPaymentDateInput);
+    }
+
+    function resetEditModalForm() {
+        if (editFormEl) {
+            editFormEl.reset();
+        }
+        clearFieldValue(editTotalInput);
+        clearFieldValue(editPendingInput);
+        setDefaultPaymentDate(editPaymentDateInput);
+    }
+
+    if (addStructureSelect && addTotalInput) {
+        addStructureSelect.addEventListener('change', function () {
+            setTotalFromStructure(addStructureSelect, addTotalInput);
+            var studentId = addStudentSelect ? addStudentSelect.value : '';
+            fetchPendingAmount(studentId, addStructureSelect.value, 'addStudentFeePending');
+        });
+    }
+
+    if (addStudentSelect) {
+        addStudentSelect.addEventListener('change', function () {
+            autoCompleteStudentFeeStructure(addStudentSelect.value, 'id_fee_structure_field');
+        });
+    }
+
+    if (editStructureSelect && editTotalInput) {
+        editStructureSelect.addEventListener('change', function () {
+            setTotalFromStructure(editStructureSelect, editTotalInput);
+            var studentId = editStudentSelect ? editStudentSelect.value : '';
+            fetchPendingAmount(studentId, editStructureSelect.value, 'editStudentFeePending');
+        });
+    }
+
+    if (editStudentSelect) {
+        editStudentSelect.addEventListener('change', function () {
+            autoCompleteStudentFeeStructure(editStudentSelect.value, 'editStudentFeeStructure');
+        });
+    }
+
+    if (addModalEl) {
+        addModalEl.addEventListener('show.bs.modal', function () {
+            resetAddModalForm();
+        });
+        addModalEl.addEventListener('hidden.bs.modal', function () {
+            resetAddModalForm();
+        });
+    }
+
+    if (editModalEl) {
+        editModalEl.addEventListener('show.bs.modal', function (event) {
+            var btn = event.relatedTarget;
+            resetEditModalForm();
+
+            var studentId = btn.getAttribute('data-student') || '';
+            var feeStructureId = btn.getAttribute('data-structure') || '';
+
+            if (editStudentSelect) {
+                editStudentSelect.value = studentId;
+            }
+            if (editStructureSelect) {
+                editStructureSelect.value = feeStructureId;
+            }
+
+            setTotalFromStructure(editStructureSelect, editTotalInput);
+            document.getElementById('editStudentFeePaid').value = btn.getAttribute('data-paid') || '';
+            document.getElementById('editStudentFeeStatus').value = btn.getAttribute('data-status') || '';
+            editFormEl.action = '/admin/student-fees/' + btn.getAttribute('data-id') + '/edit/';
+
+            // Populate payment detail fields from last payment.
+            var paymentDate = btn.getAttribute('data-payment-date') || '';
+            var paymentMethod = btn.getAttribute('data-payment-method') || '';
+            var transactionRef = btn.getAttribute('data-transaction-ref') || '';
+
+            var editPaymentDateEl = document.getElementById('editStudentFeePaymentDate');
+            var editPaymentMethodEl = document.getElementById('editStudentFeePaymentMethod');
+            var editTransactionRefEl = document.getElementById('editStudentFeeTransactionRef');
+
+            if (editPaymentDateEl) {
+                editPaymentDateEl.value = paymentDate || getTodayIsoDate();
+            }
+            if (editPaymentMethodEl) {
+                editPaymentMethodEl.value = paymentMethod;
+            }
+            if (editTransactionRefEl) {
+                // Strip the FILE:{filename} marker — show only the user-entered ref text.
+                var displayRef = transactionRef
+                    .replace(/\s*\|?\s*FILE:\S+/g, '')
+                    .replace(/^\s*\|\s*/, '')
+                    .trim();
+                editTransactionRefEl.value = displayRef;
+            }
+
+            // Show current file link using the pre-resolved ref-file-path data attribute.
+            var fileContainer = document.getElementById('editCurrentFileContainer');
+            var fileLink = document.getElementById('editCurrentFileLink');
+            var fileName = document.getElementById('editCurrentFileName');
+            var refFilePath = btn.getAttribute('data-ref-file-path') || '';
+            var refFileName = btn.getAttribute('data-ref-file-name') || '';
+            if (refFilePath && fileContainer && fileLink && fileName) {
+                fileLink.href = '/media/' + refFilePath;
+                fileName.textContent = refFileName || refFilePath.split('/').pop();
+                fileContainer.style.display = '';
+            } else if (fileContainer) {
+                fileContainer.style.display = 'none';
+            }
+
+            fetchPendingAmount(studentId, feeStructureId, 'editStudentFeePending');
+        });
+
+        editModalEl.addEventListener('hidden.bs.modal', function () {
+            resetEditModalForm();
+            if (editFormEl) {
+                editFormEl.action = '';
+            }
+        });
+    }
+
+    if (deleteModalEl) {
+        deleteModalEl.addEventListener('show.bs.modal', function (event) {
+            var btn = event.relatedTarget;
+            document.getElementById('deleteStudentFeeLabel').textContent = btn.getAttribute('data-label');
+            if (deleteFormEl) {
+                deleteFormEl.action = '/admin/student-fees/' + btn.getAttribute('data-id') + '/delete/';
+            }
+        });
+
+        deleteModalEl.addEventListener('hidden.bs.modal', function () {
+            document.getElementById('deleteStudentFeeLabel').textContent = '';
+            if (deleteFormEl) {
+                deleteFormEl.action = '';
+            }
+        });
+    }
+
+    var hasAddFormErrors = "{{ add_form.errors|yesno:'true,false' }}" === 'true';
+    if (hasAddFormErrors && addModalEl) {
+        var addModal = new bootstrap.Modal(addModalEl);
+        addModal.show();
+    }
+</script>
+{% endblock %}

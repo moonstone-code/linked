@@ -1,0 +1,380 @@
+{% extends 'base.html' %}
+
+{% block title %}Student Master{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="mb-0">Student Master</h2>
+    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addStudentModal">
+        <i class="bi bi-plus-lg me-1"></i> Add Student
+    </button>
+</div>
+
+{# Search #}
+<form method="get" class="mb-3">
+    <div class="input-group" style="max-width: 400px;">
+        <input type="text" name="q" class="form-control" placeholder="Search student name, admission number…" value="{{ search_q }}">
+        <button class="btn btn-outline-secondary" type="submit"><i class="bi bi-search"></i></button>
+        {% if search_q %}
+            <a href="{% url 'student_list' %}" class="btn btn-outline-danger"><i class="bi bi-x-lg"></i></a>
+        {% endif %}
+    </div>
+</form>
+
+{# Table #}
+<div class="card shadow-sm">
+    <div class="card-body p-0 table-responsive">
+        <table class="table table-hover mb-0">
+            <thead class="table-dark">
+                <tr>
+                    <th>#</th>
+                    <th>Admission No</th>
+                    <th>Name</th>
+                    <th>Class</th>
+                    <th>Section</th>
+                    <th>Roll No</th>
+                    <th>Status</th>
+                    <th class="text-end">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for student in page_obj %}
+                <tr>
+                    <td>{{ forloop.counter|add:page_obj.start_index|add:"-1" }}</td>
+                    <td>{{ student.admission_no }}</td>
+                    <td>{{ student.first_name }} {{ student.last_name }}</td>
+                    <td>{{ student.class_field.class_name }}</td>
+                    <td>{{ student.section_field.section_name }}</td>
+                    <td>{{ student.roll_no|default:"—" }}</td>
+                    <td><span class="badge {% if student.status == 'Active' %}bg-success{% else %}bg-danger{% endif %}">{{ student.status }}</span></td>
+                    <td class="text-end">
+                        <button class="btn btn-sm btn-outline-primary me-1"
+                                data-bs-toggle="modal"
+                                data-bs-target="#editStudentModal"
+                                data-id="{{ student.student_id }}"
+                                data-admission="{{ student.admission_no }}"
+                                data-first="{{ student.first_name }}"
+                                data-last="{{ student.last_name }}"
+                                data-dob="{{ student.dob }}"
+                                data-gender="{{ student.gender }}"
+                                data-class="{{ student.class_field.class_id }}"
+                                data-section="{{ student.section_field.section_id }}"
+                                data-parent="{{ student.parent_field.parent_id }}"
+                                data-roll="{{ student.roll_no }}"
+                                data-status="{{ student.status }}">
+                            <i class="bi bi-pencil"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger"
+                                data-bs-toggle="modal"
+                                data-bs-target="#deleteStudentModal"
+                                data-id="{{ student.student_id }}"
+                                data-name="{{ student.first_name }} {{ student.last_name }}">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="8" class="text-center text-muted py-4">
+                        {% if search_q %}No students found for "<strong>{{ search_q }}</strong>".{% else %}No students added yet.{% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{# Pagination #}
+{% if page_obj.has_other_pages %}
+<nav class="mt-3">
+    <ul class="pagination pagination-sm">
+        {% if page_obj.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search_q %}&q={{ search_q }}{% endif %}">‹ Prev</a>
+            </li>
+        {% endif %}
+        {% for num in page_obj.paginator.page_range %}
+            <li class="page-item {% if num == page_obj.number %}active{% endif %}">
+                <a class="page-link" href="?page={{ num }}{% if search_q %}&q={{ search_q }}{% endif %}">{{ num }}</a>
+            </li>
+        {% endfor %}
+        {% if page_obj.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search_q %}&q={{ search_q }}{% endif %}">Next ›</a>
+            </li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+
+
+{# ── ADD MODAL ─────────────────────────────────────────────────────────── #}
+<div class="modal fade" id="addStudentModal" tabindex="-1" aria-labelledby="addStudentModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <form method="post" action="{% url 'student_list' %}">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="add">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addStudentModalLabel">Add New Student</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                {{ add_form.admission_no.label_tag }}
+                                {{ add_form.admission_no }}
+                                {% if add_form.admission_no.errors %}
+                                    <div class="text-danger small mt-1">{{ add_form.admission_no.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                {{ add_form.roll_no.label_tag }}
+                                {{ add_form.roll_no }}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                {{ add_form.first_name.label_tag }}
+                                {{ add_form.first_name }}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                {{ add_form.last_name.label_tag }}
+                                {{ add_form.last_name }}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                {{ add_form.dob.label_tag }}
+                                {{ add_form.dob }}
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                {{ add_form.gender.label_tag }}
+                                {{ add_form.gender }}
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                {{ add_form.status.label_tag }}
+                                {{ add_form.status }}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                {{ add_form.class_field.label_tag }}
+                                {{ add_form.class_field }}
+                                {% if add_form.class_field.errors %}
+                                    <div class="text-danger small mt-1">{{ add_form.class_field.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                {{ add_form.section_field.label_tag }}
+                                {{ add_form.section_field }}
+                                {% if add_form.section_field.errors %}
+                                    <div class="text-danger small mt-1">{{ add_form.section_field.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                {{ add_form.parent_field.label_tag }}
+                                {{ add_form.parent_field }}
+                                {% if add_form.parent_field.errors %}
+                                    <div class="text-danger small mt-1">{{ add_form.parent_field.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Student</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+
+{# ── EDIT MODAL ────────────────────────────────────────────────────────── #}
+<div class="modal fade" id="editStudentModal" tabindex="-1" aria-labelledby="editStudentModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <form method="post" id="editStudentForm" action="">
+            {% csrf_token %}
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editStudentModalLabel">Edit Student</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="editStudentAdmission" class="form-label">Admission Number</label>
+                                <input type="text" class="form-control" id="editStudentAdmission" name="admission_no" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="editStudentRoll" class="form-label">Roll Number</label>
+                                <input type="text" class="form-control" id="editStudentRoll" name="roll_no">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="editStudentFirst" class="form-label">First Name</label>
+                                <input type="text" class="form-control" id="editStudentFirst" name="first_name">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="editStudentLast" class="form-label">Last Name</label>
+                                <input type="text" class="form-control" id="editStudentLast" name="last_name">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="editStudentDOB" class="form-label">Date of Birth</label>
+                                <input type="date" class="form-control" id="editStudentDOB" name="dob">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="editStudentGender" class="form-label">Gender</label>
+                                <select class="form-select" id="editStudentGender" name="gender">
+                                    <option value="">— Select —</option>
+                                    <option value="Male">Male</option>
+                                    <option value="Female">Female</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="editStudentStatus" class="form-label">Status</label>
+                                <select class="form-select" id="editStudentStatus" name="status">
+                                    <option value="Active">Active</option>
+                                    <option value="Inactive">Inactive</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="editStudentClass" class="form-label">Class</label>
+                                <select class="form-select" id="editStudentClass" name="class_field" required>
+                                    <option value="">— Select Class —</option>
+                                    {% for cls in all_classes %}
+                                        <option value="{{ cls.class_id }}">{{ cls.class_name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="editStudentSection" class="form-label">Section</label>
+                                <select class="form-select" id="editStudentSection" name="section_field" required>
+                                    <option value="">— Select Section —</option>
+                                    {% for sec in all_sections %}
+                                        <option value="{{ sec.section_id }}">{{ sec.class_field.class_name }} – {{ sec.section_name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="editStudentParent" class="form-label">Parent</label>
+                                <select class="form-select" id="editStudentParent" name="parent_field" required>
+                                    <option value="">— Select Parent —</option>
+                                    {% for parent in all_parents %}
+                                        <option value="{{ parent.parent_id }}">{{ parent.father_name|default:'' }} / {{ parent.mother_name|default:'' }} ({{ parent.mobile }})</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Update Student</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+
+{# ── DELETE MODAL ──────────────────────────────────────────────────────── #}
+<div class="modal fade" id="deleteStudentModal" tabindex="-1" aria-labelledby="deleteStudentModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-sm">
+        <form method="post" id="deleteStudentForm" action="">
+            {% csrf_token %}
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title" id="deleteStudentModalLabel">Delete Student</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    Are you sure you want to delete <strong id="deleteStudentName"></strong>?
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+
+{% block extra_js %}
+<script>
+    {% if add_form.errors %}
+        var addModal = new bootstrap.Modal(document.getElementById('addStudentModal'));
+        addModal.show();
+    {% endif %}
+
+    document.getElementById('editStudentModal').addEventListener('show.bs.modal', function (event) {
+        var btn = event.relatedTarget;
+        document.getElementById('editStudentAdmission').value = btn.getAttribute('data-admission') || '';
+        document.getElementById('editStudentRoll').value = btn.getAttribute('data-roll') || '';
+        document.getElementById('editStudentFirst').value = btn.getAttribute('data-first') || '';
+        document.getElementById('editStudentLast').value = btn.getAttribute('data-last') || '';
+        document.getElementById('editStudentDOB').value = btn.getAttribute('data-dob') || '';
+        document.getElementById('editStudentGender').value = btn.getAttribute('data-gender') || '';
+        document.getElementById('editStudentStatus').value = btn.getAttribute('data-status') || 'Active';
+        document.getElementById('editStudentClass').value = btn.getAttribute('data-class') || '';
+        document.getElementById('editStudentSection').value = btn.getAttribute('data-section') || '';
+        document.getElementById('editStudentParent').value = btn.getAttribute('data-parent') || '';
+        document.getElementById('editStudentForm').action = '/admin/students/' + btn.getAttribute('data-id') + '/edit/';
+    });
+
+    document.getElementById('deleteStudentModal').addEventListener('show.bs.modal', function (event) {
+        var btn = event.relatedTarget;
+        document.getElementById('deleteStudentName').textContent = btn.getAttribute('data-name');
+        document.getElementById('deleteStudentForm').action = '/admin/students/' + btn.getAttribute('data-id') + '/delete/';
+    });
+</script>
+{% endblock %}

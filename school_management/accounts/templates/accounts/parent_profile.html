@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+
+{% block title %}My Profile{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="mb-0">My Profile</h2>
+    <a class="btn btn-outline-primary" href="{% url 'parent_dashboard' %}"><i class="bi bi-arrow-left me-1"></i>Back</a>
+</div>
+
+<div class="row g-3">
+    <div class="col-12 col-lg-6">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-white"><strong>Profile Details</strong></div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="mb-3">{{ form.father_name.label_tag }}{{ form.father_name }}</div>
+                    <div class="mb-3">{{ form.mother_name.label_tag }}{{ form.mother_name }}</div>
+                    <div class="mb-3">{{ form.mobile.label_tag }}{{ form.mobile }}</div>
+                    <div class="mb-3">{{ form.email.label_tag }}{{ form.email }}</div>
+                    <div class="mb-3">{{ form.address.label_tag }}{{ form.address }}</div>
+                    <button type="submit" class="btn btn-primary"><i class="bi bi-save me-1"></i>Update Profile</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-lg-6">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-white"><strong>My Child</strong></div>
+            <div class="card-body p-0 table-responsive">
+                <table class="table table-sm mb-0">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Name</th>
+                            <th>Admission No</th>
+                            <th>Class</th>
+                            <th>Section</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in children %}
+                        <tr>
+                            <td>{{ row.first_name }} {{ row.last_name }}</td>
+                            <td>{{ row.admission_no }}</td>
+                            <td>{{ row.class_field.class_name }}</td>
+                            <td>{{ row.section_field.section_name }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="4" class="text-center text-muted py-4">No child records mapped yet.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
