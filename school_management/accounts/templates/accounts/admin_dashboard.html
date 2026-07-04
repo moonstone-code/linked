@@ -1,0 +1,252 @@
+{% extends 'base.html' %}
+
+{% block title %}Admin Dashboard{% endblock %}
+
+{% block extra_css %}
+<style>
+    .stat-card .icon-wrap {
+        width: 52px; height: 52px;
+        border-radius: 14px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 1.5rem;
+        flex-shrink: 0;
+    }
+    .stat-card .stat-num  { font-size: 1.7rem; font-weight: 800; line-height: 1.1; }
+    .stat-card .stat-label { font-size: 0.75rem; color: #6c757d; text-transform: uppercase; letter-spacing: .05em; font-weight: 700; }
+    .progress { border-radius: 999px; }
+    .section-title { font-size: 0.72rem; text-transform: uppercase; letter-spacing: .1em; color: #7dd3fc; font-weight: 700; }
+    .card-header.bg-white .section-title { color: #0369a1; }
+    .fee-status-row td { vertical-align: middle; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+{# ── Page header ─────────────────────────────────────────────────────────── #}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="mb-0 fw-bold">Admin Dashboard</h2>
+        <small class="text-muted">School-wide progress &amp; status overview</small>
+    </div>
+</div>
+
+{# ── KPI stat cards ──────────────────────────────────────────────────────── #}
+<div class="row g-3 mb-4">
+
+    <div class="col-6 col-xl-3">
+        <div class="card shadow-sm stat-card h-100">
+            <div class="card-body d-flex align-items-center gap-3">
+                <div class="icon-wrap" style="background:#e0f2fe; color:#0284c7;"><i class="bi bi-people-fill"></i></div>
+                <div>
+                    <div class="stat-num" style="color:#0284c7;">{{ total_students }}</div>
+                    <div class="stat-label">Students</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-6 col-xl-3">
+        <div class="card shadow-sm stat-card h-100">
+            <div class="card-body d-flex align-items-center gap-3">
+                <div class="icon-wrap" style="background:#dcfce7; color:#16a34a;"><i class="bi bi-person-badge-fill"></i></div>
+                <div>
+                    <div class="stat-num" style="color:#16a34a;">{{ total_teachers }}</div>
+                    <div class="stat-label">Teachers</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-6 col-xl-3">
+        <div class="card shadow-sm stat-card h-100">
+            <div class="card-body d-flex align-items-center gap-3">
+                <div class="icon-wrap" style="background:#fff7ed; color:#ea580c;"><i class="bi bi-person-hearts"></i></div>
+                <div>
+                    <div class="stat-num" style="color:#ea580c;">{{ total_parents }}</div>
+                    <div class="stat-label">Parents</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-6 col-xl-3">
+        <div class="card shadow-sm stat-card h-100">
+            <div class="card-body d-flex align-items-center gap-3">
+                <div class="icon-wrap" style="background:#fef9c3; color:#ca8a04;"><i class="bi bi-person-lock"></i></div>
+                <div>
+                    <div class="stat-num" style="color:#ca8a04;">{{ active_users }}<span class="fs-6 text-muted fw-normal"> / {{ total_users }}</span></div>
+                    <div class="stat-label">Active Users</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+{# ── Fee collection progress + breakdown ─────────────────────────────────── #}
+<div class="row g-3 mb-4">
+
+    {# Collection progress bar #}
+    <div class="col-12 col-lg-6">
+        <div class="card shadow-sm h-100">
+            <div class="card-body">
+                <p class="section-title mb-3"><i class="bi bi-cash-coin me-1"></i>Fee Collection Progress</p>
+
+                <div class="d-flex justify-content-between mb-1">
+                    <span class="small fw-semibold">Collected</span>
+                    <span class="small fw-bold text-success">{{ collection_pct }}%</span>
+                </div>
+                <div class="progress mb-3" style="height: 14px;">
+                    <div class="progress-bar bg-success"
+                         role="progressbar"
+                         style="width: {{ collection_pct }}%"
+                         aria-valuenow="{{ collection_pct }}" aria-valuemin="0" aria-valuemax="100">
+                    </div>
+                </div>
+
+                <div class="row text-center g-2">
+                    <div class="col-4">
+                        <div class="py-2 rounded bg-light">
+                            <div class="fw-bold text-dark small">₹{{ grand_total|floatformat:0 }}</div>
+                            <div class="text-muted" style="font-size:.72rem;">Total Billed</div>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="py-2 rounded" style="background:#d1fae5;">
+                            <div class="fw-bold text-success small">₹{{ grand_paid|floatformat:0 }}</div>
+                            <div class="text-muted" style="font-size:.72rem;">Collected</div>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="py-2 rounded" style="background:#fef9c3;">
+                            <div class="fw-bold text-warning small">₹{{ grand_pending|floatformat:0 }}</div>
+                            <div class="text-muted" style="font-size:.72rem;">Pending</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {# Fee status breakdown #}
+    <div class="col-12 col-lg-6">
+        <div class="card shadow-sm h-100">
+            <div class="card-body">
+                <p class="section-title mb-3"><i class="bi bi-bar-chart-fill me-1"></i>Fee Status Breakdown</p>
+
+                {# Paid #}
+                <div class="mb-2">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span class="small"><span class="badge bg-success me-1">Paid</span></span>
+                        <span class="small fw-semibold">{{ paid_count }} / {{ total_fee_records }}</span>
+                    </div>
+                    <div class="progress" style="height:10px;">
+                        <div class="progress-bar bg-success" style="width:{% widthratio paid_count total_fee_records 100 %}%"></div>
+                    </div>
+                </div>
+
+                {# Partial #}
+                <div class="mb-2">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span class="small"><span class="badge bg-warning text-dark me-1">Partial</span></span>
+                        <span class="small fw-semibold">{{ partial_count }} / {{ total_fee_records }}</span>
+                    </div>
+                    <div class="progress" style="height:10px;">
+                        <div class="progress-bar bg-warning" style="width:{% widthratio partial_count total_fee_records 100 %}%"></div>
+                    </div>
+                </div>
+
+                {# Pending #}
+                <div class="mb-0">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span class="small"><span class="badge bg-danger me-1">Pending</span></span>
+                        <span class="small fw-semibold">{{ pending_count }} / {{ total_fee_records }}</span>
+                    </div>
+                    <div class="progress" style="height:10px;">
+                        <div class="progress-bar bg-danger" style="width:{% widthratio pending_count total_fee_records 100 %}%"></div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+</div>
+
+{# ── Recent payments + User role distribution ─────────────────────────────── #}
+<div class="row g-3">
+
+    {# Recent payments #}
+    <div class="col-12 col-lg-8">
+        <div class="card shadow-sm">
+            <div class="card-header bg-white py-2">
+                <p class="section-title mb-0"><i class="bi bi-receipt me-1"></i>Recent Payments</p>
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-hover table-sm mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Student</th>
+                            <th>Academic Year</th>
+                            <th class="text-end">Amount</th>
+                            <th>Method</th>
+                            <th>Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for pmt in recent_payments %}
+                        <tr>
+                            <td>{{ pmt.student_fee_field.student_field.first_name }} {{ pmt.student_fee_field.student_field.last_name }}</td>
+                            <td>{{ pmt.student_fee_field.fee_structure_field.academic_year }}</td>
+                            <td class="text-end text-success fw-semibold">₹{{ pmt.amount|floatformat:0 }}</td>
+                            <td>{{ pmt.payment_method|default:"—" }}</td>
+                            <td>{{ pmt.payment_date|date:"d M Y" }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center text-muted py-3">No payments recorded yet.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% if recent_payments %}
+            <div class="card-footer bg-white text-end py-2">
+                <a href="{% url 'student_fee_list' %}" class="small text-decoration-none">View all fees →</a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    {# User role distribution #}
+    <div class="col-12 col-lg-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-white py-2">
+                <p class="section-title mb-0"><i class="bi bi-people me-1"></i>Users by Role</p>
+            </div>
+            <div class="card-body">
+                {% for rc in role_counts %}
+                <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                    <span class="small fw-semibold">{{ rc.role }}</span>
+                    <span class="badge
+                        {% if rc.role == 'Admin' %}bg-danger
+                        {% elif rc.role == 'Teacher' %}bg-success
+                        {% elif rc.role == 'Parent' %}bg-info text-dark
+                        {% else %}bg-secondary
+                        {% endif %} rounded-pill px-3">
+                        {{ rc.count }}
+                    </span>
+                </div>
+                {% empty %}
+                <p class="text-muted small mb-0">No users found.</p>
+                {% endfor %}
+                <div class="mt-3 text-end">
+                    <a href="{% url 'user_list' %}" class="small text-decoration-none">Manage users →</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+{% endblock %}

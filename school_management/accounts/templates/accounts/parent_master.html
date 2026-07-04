@@ -1,0 +1,264 @@
+{% extends 'base.html' %}
+
+{% block title %}Parent Master{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="mb-0">Parent Master</h2>
+    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addParentModal">
+        <i class="bi bi-plus-lg me-1"></i> Add Parent
+    </button>
+</div>
+
+{# Search #}
+<form method="get" class="mb-3">
+    <div class="input-group" style="max-width: 400px;">
+        <input type="text" name="q" class="form-control" placeholder="Search parent name, mobile, email…" value="{{ search_q }}">
+        <button class="btn btn-outline-secondary" type="submit"><i class="bi bi-search"></i></button>
+        {% if search_q %}
+            <a href="{% url 'parent_list' %}" class="btn btn-outline-danger"><i class="bi bi-x-lg"></i></a>
+        {% endif %}
+    </div>
+</form>
+
+{# Table #}
+<div class="card shadow-sm">
+    <div class="card-body p-0">
+        <table class="table table-hover mb-0">
+            <thead class="table-dark">
+                <tr>
+                    <th>#</th>
+                    <th>Father Name</th>
+                    <th>Mother Name</th>
+                    <th>Mobile</th>
+                    <th>Email</th>
+                    <th>Created</th>
+                    <th class="text-end">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for parent in page_obj %}
+                <tr>
+                    <td>{{ forloop.counter|add:page_obj.start_index|add:"-1" }}</td>
+                    <td>{{ parent.father_name|default:"—" }}</td>
+                    <td>{{ parent.mother_name|default:"—" }}</td>
+                    <td>{{ parent.mobile }}</td>
+                    <td>{{ parent.email|default:"—" }}</td>
+                    <td>{{ parent.created_at|date:"d M Y" }}</td>
+                    <td class="text-end">
+                        <button class="btn btn-sm btn-outline-primary me-1"
+                                data-bs-toggle="modal"
+                                data-bs-target="#editParentModal"
+                                data-id="{{ parent.parent_id }}"
+                                data-father="{{ parent.father_name }}"
+                                data-mother="{{ parent.mother_name }}"
+                                data-mobile="{{ parent.mobile }}"
+                                data-email="{{ parent.email }}"
+                                data-address="{{ parent.address }}">
+                            <i class="bi bi-pencil"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger"
+                                data-bs-toggle="modal"
+                                data-bs-target="#deleteParentModal"
+                                data-id="{{ parent.parent_id }}"
+                                data-label="{{ parent.father_name|default:'' }} / {{ parent.mother_name|default:'' }}">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="text-center text-muted py-4">
+                        {% if search_q %}No parents found for "<strong>{{ search_q }}</strong>".{% else %}No parents added yet.{% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{# Pagination #}
+{% if page_obj.has_other_pages %}
+<nav class="mt-3">
+    <ul class="pagination pagination-sm">
+        {% if page_obj.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search_q %}&q={{ search_q }}{% endif %}">‹ Prev</a>
+            </li>
+        {% endif %}
+        {% for num in page_obj.paginator.page_range %}
+            <li class="page-item {% if num == page_obj.number %}active{% endif %}">
+                <a class="page-link" href="?page={{ num }}{% if search_q %}&q={{ search_q }}{% endif %}">{{ num }}</a>
+            </li>
+        {% endfor %}
+        {% if page_obj.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search_q %}&q={{ search_q }}{% endif %}">Next ›</a>
+            </li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+
+
+{# ── ADD MODAL ─────────────────────────────────────────────────────────── #}
+<div class="modal fade" id="addParentModal" tabindex="-1" aria-labelledby="addParentModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <form method="post" action="{% url 'parent_list' %}">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="add">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addParentModalLabel">Add New Parent</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                {{ add_form.father_name.label_tag }}
+                                {{ add_form.father_name }}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                {{ add_form.mother_name.label_tag }}
+                                {{ add_form.mother_name }}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                {{ add_form.mobile.label_tag }}
+                                {{ add_form.mobile }}
+                                {% if add_form.mobile.errors %}
+                                    <div class="text-danger small mt-1">{{ add_form.mobile.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                {{ add_form.email.label_tag }}
+                                {{ add_form.email }}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        {{ add_form.address.label_tag }}
+                        {{ add_form.address }}
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Parent</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+
+{# ── EDIT MODAL ────────────────────────────────────────────────────────── #}
+<div class="modal fade" id="editParentModal" tabindex="-1" aria-labelledby="editParentModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <form method="post" id="editParentForm" action="">
+            {% csrf_token %}
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editParentModalLabel">Edit Parent</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="editParentFather" class="form-label">Father Name</label>
+                                <input type="text" class="form-control" id="editParentFather" name="father_name">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="editParentMother" class="form-label">Mother Name</label>
+                                <input type="text" class="form-control" id="editParentMother" name="mother_name">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="editParentMobile" class="form-label">Mobile Number</label>
+                                <input type="text" class="form-control" id="editParentMobile" name="mobile" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="editParentEmail" class="form-label">Email</label>
+                                <input type="email" class="form-control" id="editParentEmail" name="email">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editParentAddress" class="form-label">Address</label>
+                        <textarea class="form-control" id="editParentAddress" name="address" rows="3"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Update Parent</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+
+{# ── DELETE MODAL ──────────────────────────────────────────────────────── #}
+<div class="modal fade" id="deleteParentModal" tabindex="-1" aria-labelledby="deleteParentModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-sm">
+        <form method="post" id="deleteParentForm" action="">
+            {% csrf_token %}
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title" id="deleteParentModalLabel">Delete Parent</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    Are you sure you want to delete <strong id="deleteParentLabel"></strong>?
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+
+{% block extra_js %}
+<script>
+    {% if add_form.errors %}
+        var addModal = new bootstrap.Modal(document.getElementById('addParentModal'));
+        addModal.show();
+    {% endif %}
+
+    document.getElementById('editParentModal').addEventListener('show.bs.modal', function (event) {
+        var btn = event.relatedTarget;
+        document.getElementById('editParentFather').value = btn.getAttribute('data-father') || '';
+        document.getElementById('editParentMother').value = btn.getAttribute('data-mother') || '';
+        document.getElementById('editParentMobile').value = btn.getAttribute('data-mobile') || '';
+        document.getElementById('editParentEmail').value = btn.getAttribute('data-email') || '';
+        document.getElementById('editParentAddress').value = btn.getAttribute('data-address') || '';
+        document.getElementById('editParentForm').action = '/admin/parents/' + btn.getAttribute('data-id') + '/edit/';
+    });
+
+    document.getElementById('deleteParentModal').addEventListener('show.bs.modal', function (event) {
+        var btn = event.relatedTarget;
+        document.getElementById('deleteParentLabel').textContent = btn.getAttribute('data-label') || 'this parent';
+        document.getElementById('deleteParentForm').action = '/admin/parents/' + btn.getAttribute('data-id') + '/delete/';
+    });
+</script>
+{% endblock %}

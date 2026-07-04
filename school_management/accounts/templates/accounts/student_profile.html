@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+
+{% block title %}My Profile{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="mb-0">My Profile</h2>
+    <a class="btn btn-outline-primary" href="{% url 'student_dashboard' %}"><i class="bi bi-arrow-left me-1"></i>Back</a>
+</div>
+
+<div class="row g-3">
+    <div class="col-12 col-lg-6">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-white"><strong>Student Details</strong></div>
+            <div class="card-body">
+                <dl class="row mb-0">
+                    <dt class="col-5">Admission No</dt><dd class="col-7">{{ student.admission_no }}</dd>
+                    <dt class="col-5">Name</dt><dd class="col-7">{{ student.first_name }} {{ student.last_name }}</dd>
+                    <dt class="col-5">Class</dt><dd class="col-7">{{ student.class_field.class_name }}</dd>
+                    <dt class="col-5">Section</dt><dd class="col-7">{{ student.section_field.section_name }}</dd>
+                    <dt class="col-5">Roll No</dt><dd class="col-7">{{ student.roll_no|default:'—' }}</dd>
+                    <dt class="col-5">Gender</dt><dd class="col-7">{{ student.gender|default:'—' }}</dd>
+                    <dt class="col-5">Date of Birth</dt><dd class="col-7">{{ student.dob|date:'d M Y'|default:'—' }}</dd>
+                    <dt class="col-5">Status</dt>
+                    <dd class="col-7">
+                        {% if student.status == 'Active' %}
+                            <span class="badge bg-success">Active</span>
+                        {% else %}
+                            <span class="badge bg-secondary">Inactive</span>
+                        {% endif %}
+                    </dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-lg-6">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-white"><strong>Parent / Fee Overview</strong></div>
+            <div class="card-body">
+                <p class="mb-2"><strong>Parent:</strong> {{ student.parent_field }}</p>
+                <p class="mb-3"><strong>Class:</strong> {{ student.class_field.class_name }} - {{ student.section_field.section_name }}</p>
+                <div class="row g-3 mb-3">
+                    <div class="col-4"><div class="p-3 bg-light rounded text-center"><div class="small text-muted">Total Fees</div><div class="fw-bold">₹{{ fee_records|length }}</div></div></div>
+                    <div class="col-4"><div class="p-3 bg-light rounded text-center"><div class="small text-muted">Recent Payments</div><div class="fw-bold">{{ recent_payments|length }}</div></div></div>
+                    <div class="col-4"><div class="p-3 bg-light rounded text-center"><div class="small text-muted">Balance</div><div class="fw-bold">View Fee Status</div></div></div>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Academic Year</th>
+                                <th>Status</th>
+                                <th class="text-end">Pending</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for fee in fee_records %}
+                            <tr>
+                                <td>{{ fee.fee_structure_field.academic_year }}</td>
+                                <td>{{ fee.status }}</td>
+                                <td class="text-end">₹{{ fee.pending_amount|floatformat:0 }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="3" class="text-center text-muted py-4">No fee records mapped yet.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

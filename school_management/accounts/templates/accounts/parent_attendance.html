@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+
+{% block title %}Attendance{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="mb-0">Attendance</h2>
+    <a class="btn btn-outline-primary" href="{% url 'parent_dashboard' %}"><i class="bi bi-arrow-left me-1"></i>Back</a>
+</div>
+
+<form method="get" class="mb-3">
+    <div class="input-group" style="max-width: 500px;">
+        <input type="text" name="q" class="form-control" placeholder="Search date, child, status..." value="{{ search_q }}">
+        <button class="btn btn-outline-secondary" type="submit"><i class="bi bi-search"></i></button>
+        {% if search_q %}
+            <a href="{% url 'parent_attendance' %}" class="btn btn-outline-danger"><i class="bi bi-x-lg"></i></a>
+        {% endif %}
+    </div>
+</form>
+
+<div class="card shadow-sm">
+    <div class="card-body p-0 table-responsive">
+        <table class="table table-hover mb-0">
+            <thead class="table-dark">
+                <tr>
+                    <th>#</th>
+                    <th>Date</th>
+                    <th>Child</th>
+                    <th>Class</th>
+                    <th>Section</th>
+                    <th>Status</th>
+                    <th>Remarks</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in page_obj %}
+                <tr>
+                    <td>{{ forloop.counter|add:page_obj.start_index|add:'-1' }}</td>
+                    <td>{{ row.attendance_date|date:'d M Y' }}</td>
+                    <td>{{ row.student_field.first_name }} {{ row.student_field.last_name }}</td>
+                    <td>{{ row.student_field.class_field.class_name }}</td>
+                    <td>{{ row.student_field.section_field.section_name }}</td>
+                    <td>
+                        {% if row.status == 'Present' %}
+                            <span class="badge bg-success">Present</span>
+                        {% elif row.status == 'Absent' %}
+                            <span class="badge bg-danger">Absent</span>
+                        {% else %}
+                            <span class="badge bg-secondary">Leave</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ row.remarks|default:'—' }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="7" class="text-center text-muted py-4">No attendance records found.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% if page_obj.has_other_pages %}
+<nav class="mt-3">
+    <ul class="pagination pagination-sm">
+        {% if page_obj.has_previous %}
+            <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search_q %}&q={{ search_q }}{% endif %}">Prev</a></li>
+        {% endif %}
+        {% for num in page_obj.paginator.page_range %}
+            <li class="page-item {% if num == page_obj.number %}active{% endif %}"><a class="page-link" href="?page={{ num }}{% if search_q %}&q={{ search_q }}{% endif %}">{{ num }}</a></li>
+        {% endfor %}
+        {% if page_obj.has_next %}
+            <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search_q %}&q={{ search_q }}{% endif %}">Next</a></li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+{% endblock %}

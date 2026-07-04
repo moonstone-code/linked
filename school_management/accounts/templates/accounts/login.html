@@ -1,0 +1,140 @@
+{% extends 'base.html' %}
+
+{% block title %}Login | LinkEd{% endblock %}
+
+{% block extra_css %}
+<style>
+    body { background: linear-gradient(160deg, #e0f2fe 0%, #f0fdf4 100%); }
+    .login-card {
+        border-radius: 1.25rem;
+        box-shadow: 0 8px 32px rgba(14,165,233,.15);
+        border: none;
+    }
+    .login-logo {
+        width: 64px; height: 64px;
+        background: linear-gradient(135deg, #0ea5e9, #38bdf8);
+        border-radius: 1rem;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 1.8rem; color: #fff;
+        margin: 0 auto 1rem;
+        box-shadow: 0 4px 14px rgba(14,165,233,.35);
+    }
+    .login-title { font-weight: 800; color: #0c4a6e; font-size: 1.4rem; }
+    .form-control:focus {
+        border-color: #38bdf8;
+        box-shadow: 0 0 0 .2rem rgba(14,165,233,.2);
+    }
+    .form-label { font-weight: 600; color: #0c4a6e; }
+    #capslock-warning {
+        display: none;          /* JS overrides this with 'flex' when CapsLock is ON */
+        align-items: center;
+        gap: 0.3rem;
+        font-size: .82rem;
+        font-weight: 600;
+    }
+</style>
+{% endblock %}
+
+{# Suppress the above-card message block — we render alerts inside the card instead #}
+{% block auth_messages %}{% endblock %}
+
+{% block auth_content %}
+<div class="row justify-content-center">
+    <div class="col-12 col-sm-10 col-md-6 col-lg-4">
+        <div class="card login-card">
+            <div class="card-body p-4 p-md-5">
+                <div class="login-logo"><i class="bi bi-mortarboard-fill"></i></div>
+                <h4 class="login-title text-center mb-1">Welcome Back!</h4>
+                <p class="text-muted text-center mb-4" style="font-size:.9rem;">Sign in with your school account</p>
+
+                {# ── In-card alerts ─────────────────────────────────── #}
+                {% if messages %}
+                    {% for message in messages %}
+                    <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show d-flex align-items-center gap-2 py-2" role="alert" style="border-radius:.65rem; font-size:.9rem;">
+                        {% if message.tags == 'danger' %}
+                            <i class="bi bi-exclamation-circle-fill text-danger flex-shrink-0"></i>
+                        {% elif message.tags == 'success' %}
+                            <i class="bi bi-check-circle-fill text-success flex-shrink-0"></i>
+                        {% elif message.tags == 'warning' %}
+                            <i class="bi bi-exclamation-triangle-fill text-warning flex-shrink-0"></i>
+                        {% else %}
+                            <i class="bi bi-info-circle-fill flex-shrink-0"></i>
+                        {% endif %}
+                        <span>{{ message }}</span>
+                        <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                    {% endfor %}
+                {% endif %}
+
+                <form method="post" novalidate>
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="username" class="form-label">Username</label>
+                        <input type="text" class="form-control" id="username" name="username" required autofocus>
+                    </div>
+                    <div class="mb-1">
+                        <label for="password" class="form-label">Password</label>
+                        <input type="password" class="form-control" id="password" name="password" required autocomplete="current-password">
+                    </div>
+
+                    {# ── Caps Lock warning ──────────────────────────── #}
+                    <div id="capslock-warning" class="text-warning mb-3 mt-1">
+                        <i class="bi bi-capslock-fill"></i>
+                        <span>Caps Lock is ON</span>
+                    </div>
+                    <div class="mb-4" id="caps-spacer" style="height:.75rem;"></div>
+
+                    <button type="submit" class="btn btn-primary w-100 fw-bold py-2" style="border-radius:.65rem;">
+                        <i class="bi bi-box-arrow-in-right me-2"></i>Login
+                    </button>
+                </form>
+            </div>
+        </div>
+        <p class="text-center text-muted mt-3" style="font-size:.78rem;">
+            &copy; {% now "Y" %} LinkEd School Management
+        </p>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+    const pwdInput = document.getElementById('password');
+    const usrInput = document.getElementById('username');
+    const warning  = document.getElementById('capslock-warning');
+    const spacer   = document.getElementById('caps-spacer');
+    let lastKnownCaps = false;
+
+    function setCaps(on) {
+        lastKnownCaps = on;
+        warning.style.display = on ? 'flex' : 'none';
+        spacer.style.display  = on ? 'none' : 'block';
+    }
+
+    function checkCaps(e) {
+        if (e.getModifierState) {
+            setCaps(e.getModifierState('CapsLock'));
+        }
+    }
+
+    // Immediate feedback while typing in password field
+    pwdInput.addEventListener('keydown', checkCaps);
+
+    // Also detect while typing username (CapsLock may be on before reaching password)
+    usrInput.addEventListener('keydown', checkCaps);
+
+    // Catch CapsLock toggle key pressed ANYWHERE on the page
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'CapsLock' && e.getModifierState) {
+            setCaps(e.getModifierState('CapsLock'));
+        }
+    });
+
+    // When password field is focused, restore last known state
+    pwdInput.addEventListener('focus', function () {
+        setCaps(lastKnownCaps);
+    });
+})();
+</script>
+{% endblock %}

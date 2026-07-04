@@ -1,0 +1,277 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}School Management System{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        /* ── Brand palette: "Junior Breeze" ─────────────────────────────────
+           Primary  : #0ea5e9  (sky blue)
+           Sidebar  : #0c4a6e  (deep sky navy)
+           Body bg  : #f0f9ff  (barely-tinted sky white)
+        ─────────────────────────────────────────────────────────────────── */
+
+        /* Override Bootstrap primary everywhere */
+        :root {
+            --bs-primary:           #0ea5e9;
+            --bs-primary-rgb:       14, 165, 233;
+            --bs-link-color:        #0ea5e9;
+            --bs-link-hover-color:  #0284c7;
+        }
+        .btn-primary          { background-color: #0ea5e9; border-color: #0ea5e9; }
+        .btn-primary:hover,
+        .btn-primary:focus    { background-color: #0284c7; border-color: #0284c7; }
+        .btn-outline-primary  { color: #0ea5e9; border-color: #0ea5e9; }
+        .btn-outline-primary:hover { background-color: #0ea5e9; color: #fff; }
+        .bg-primary           { background-color: #0ea5e9 !important; }
+        .text-primary         { color: #0ea5e9 !important; }
+        .border-primary       { border-color: #0ea5e9 !important; }
+        .badge.bg-primary     { background-color: #0ea5e9 !important; }
+
+        /* ── Global ────────────────────────────────────────────────────── */
+        body {
+            background-color: #f0f9ff;
+            font-family: 'Nunito', sans-serif;
+        }
+        h1, h2, h3, h4, h5, h6, .fw-bold, .fw-semibold { font-family: 'Nunito', sans-serif; }
+
+        /* ── Navbar ────────────────────────────────────────────────────── */
+        .app-navbar {
+            background: linear-gradient(135deg, #0ea5e9 0%, #38bdf8 100%);
+            box-shadow: 0 2px 8px rgba(14,165,233,.25);
+        }
+        .app-navbar .navbar-brand {
+            font-weight: 800;
+            font-size: 1.15rem;
+            letter-spacing: .01em;
+        }
+
+        /* ── Sidebar ───────────────────────────────────────────────────── */
+        .app-sidebar {
+            min-height: calc(100vh - 56px);
+            background: #0c4a6e;
+        }
+        .app-sidebar .sidebar-menu-label {
+            color: #7dd3fc;
+            font-size: 0.68rem;
+            text-transform: uppercase;
+            letter-spacing: .1em;
+            font-weight: 700;
+        }
+        .app-sidebar .nav-link {
+            color: #bae6fd;
+            border-radius: 0.6rem;
+            margin-bottom: 0.2rem;
+            font-weight: 600;
+            font-size: 0.86rem;
+            display: flex;
+            align-items: center;
+            gap: 0.65rem;
+            padding: 0.52rem 0.65rem;
+            line-height: 1.2;
+            white-space: nowrap;
+        }
+        .app-sidebar .menu-heading {
+            color: #e0f2fe;
+            font-size: 0.86rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.65rem;
+            padding: 0.35rem 0.65rem;
+            line-height: 1.2;
+            white-space: nowrap;
+        }
+        .app-sidebar .menu-icon {
+            width: 1.15rem;
+            min-width: 1.15rem;
+            color: #e0f2fe;
+            font-size: 1rem;
+            line-height: 1;
+            text-align: center;
+        }
+        .app-sidebar .submenu {
+            margin-left: 2.45rem;
+            margin-top: 0.2rem;
+            margin-bottom: 0.4rem;
+        }
+        .app-sidebar .submenu-link {
+            color: #7dd3fc;
+            display: block;
+            font-size: 0.83rem;
+            padding: 0.22rem 0.5rem;
+            text-decoration: none;
+            border-radius: 0.4rem;
+            font-weight: 500;
+        }
+        .app-sidebar .submenu-link:hover,
+        .app-sidebar .submenu-link.active {
+            color: #fff;
+            background: #075985;
+        }
+        .app-sidebar .nav-link:hover,
+        .app-sidebar .nav-link.active {
+            background: #075985;
+            color: #fff;
+        }
+
+        /* ── Layout ────────────────────────────────────────────────────── */
+        .main-wrap { min-height: calc(100vh - 56px); }
+
+        /* ── Cards ─────────────────────────────────────────────────────── */
+        .card { border: none; border-radius: 0.75rem; }
+        .card.shadow-sm { box-shadow: 0 2px 12px rgba(14,165,233,.10) !important; }
+
+        /* ── Tables ────────────────────────────────────────────────────── */
+        .table thead.table-dark th {
+            background-color: #0c4a6e;
+            color: #e0f2fe;
+            font-weight: 700;
+            border-color: #075985;
+        }
+
+        /* ── Alerts ────────────────────────────────────────────────────── */
+        .alert { border-radius: 0.6rem; font-weight: 500; }
+        /* ── Responsive sidebar drawer (mobile) ─────────────────────────────── */
+        @media (max-width: 767.98px) {
+            .app-sidebar {
+                position: fixed;
+                top: 56px;
+                left: 0;
+                bottom: 0;
+                width: 240px;
+                z-index: 1045;
+                transform: translateX(-100%);
+                transition: transform 0.28s ease;
+                overflow-y: auto;
+                min-height: unset;
+            }
+            .app-sidebar.sidebar-open {
+                transform: translateX(0);
+                box-shadow: 4px 0 20px rgba(0,0,0,0.25);
+            }
+        }
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            top: 56px;
+            background: rgba(0, 0, 0, 0.45);
+            z-index: 1044;
+        }
+        .sidebar-overlay.active { display: block; }    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    {% if user.is_authenticated %}
+    <nav class="navbar navbar-expand-lg navbar-dark app-navbar">
+        <div class="container-fluid">
+            <div class="d-flex align-items-center gap-2">
+                <button class="btn btn-sm btn-light d-md-none" id="sidebarToggle" aria-label="Toggle menu">
+                    <i class="bi bi-list fs-5"></i>
+                </button>
+                <a class="navbar-brand fw-semibold mb-0" href="#">School Management</a>
+            </div>
+            <div class="d-flex align-items-center gap-3">
+                <span class="text-white small d-none d-sm-inline">{{ user.username }}{% if current_role %} ({{ current_role }}){% endif %}</span>
+                <form method="post" action="{% url 'logout' %}" class="m-0">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-sm btn-light">Logout</button>
+                </form>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid">
+        <div class="row main-wrap">
+            <aside class="col-12 col-md-3 col-lg-2 p-3 app-sidebar">
+                <h6 class="sidebar-menu-label mb-3">Menu</h6>
+                <nav class="nav flex-column">
+                    {% for item in sidebar_menu %}
+                        {% if item.children %}
+                            <div class="menu-heading mb-1">
+                                <i class="bi {{ item.icon }} menu-icon"></i><span>{{ item.label }}</span>
+                            </div>
+                            <div class="submenu">
+                                {% for child in item.children %}
+                                    <a class="submenu-link {% if request.resolver_match.url_name == child.url_name %}active{% endif %}" href="{% url child.url_name %}">{{ child.label }}</a>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <a class="nav-link {% if request.resolver_match.url_name == item.url_name %}active{% endif %}" href="{% url item.url_name %}">
+                                <i class="bi {{ item.icon }} menu-icon"></i><span>{{ item.label }}</span>
+                            </a>
+                        {% endif %}
+                    {% empty %}
+                        <span class="text-secondary small">No menu available</span>
+                    {% endfor %}
+                </nav>
+            </aside>
+            <div class="sidebar-overlay" id="sidebarOverlay"></div>
+            <main class="col-12 col-md-9 col-lg-10 p-4">
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+                {% block content %}{% endblock %}
+            </main>
+        </div>
+    </div>
+    {% else %}
+    <div class="container py-5">
+        {% block auth_messages %}
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endblock %}
+        {% block auth_content %}{% endblock %}
+    </div>
+    {% endif %}
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        (function () {
+            var toggle   = document.getElementById('sidebarToggle');
+            var sidebar  = document.querySelector('.app-sidebar');
+            var overlay  = document.getElementById('sidebarOverlay');
+
+            function openSidebar()  { sidebar.classList.add('sidebar-open');    overlay.classList.add('active'); }
+            function closeSidebar() { sidebar.classList.remove('sidebar-open'); overlay.classList.remove('active'); }
+
+            if (toggle)  toggle.addEventListener('click', function () {
+                sidebar.classList.contains('sidebar-open') ? closeSidebar() : openSidebar();
+            });
+            if (overlay) overlay.addEventListener('click', closeSidebar);
+
+            // Close on nav-link click on mobile
+            document.querySelectorAll('.app-sidebar .nav-link, .app-sidebar .submenu-link')
+                .forEach(function (link) {
+                    link.addEventListener('click', function () {
+                        if (window.innerWidth < 768) closeSidebar();
+                    });
+                });
+
+            // Close if resized to desktop
+            window.addEventListener('resize', function () {
+                if (window.innerWidth >= 768) closeSidebar();
+            });
+        })();
+    </script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

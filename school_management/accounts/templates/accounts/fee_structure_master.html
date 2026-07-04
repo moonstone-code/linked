@@ -1,0 +1,322 @@
+{% extends 'base.html' %}
+
+{% block title %}Fee Structure{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="mb-0">Fee Structure</h2>
+    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addFeeStructureModal">
+        <i class="bi bi-plus-lg me-1"></i> Add Fee Structure
+    </button>
+</div>
+
+{# Search #}
+<form method="get" class="mb-3">
+    <div class="input-group" style="max-width: 500px;">
+        <input type="text" name="q" class="form-control" placeholder="Search class or academic year…" value="{{ search_q }}">
+        <button class="btn btn-outline-secondary" type="submit"><i class="bi bi-search"></i></button>
+        {% if search_q %}
+            <a href="{% url 'fee_structure_list' %}" class="btn btn-outline-danger"><i class="bi bi-x-lg"></i></a>
+        {% endif %}
+    </div>
+</form>
+
+{# Table #}
+<div class="card shadow-sm">
+    <div class="card-body p-0 table-responsive">
+        <table class="table table-hover mb-0">
+            <thead class="table-dark">
+                <tr>
+                    <th>#</th>
+                    <th>Class</th>
+                    <th>Academic Year</th>
+                    <th>Tuition</th>
+                    <th>Activity</th>
+                    <th>Transport</th>
+                    <th>Other</th>
+                    <th class="text-end">Total</th>
+                    <th class="text-end">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for fee in page_obj %}
+                <tr>
+                    <td>{{ forloop.counter|add:page_obj.start_index|add:"-1" }}</td>
+                    <td>{{ fee.class_field.class_name }}</td>
+                    <td>{{ fee.academic_year }}</td>
+                    <td>₹{{ fee.tuition_fee }}</td>
+                    <td>₹{{ fee.activity_fee }}</td>
+                    <td>₹{{ fee.transport_fee }}</td>
+                    <td>₹{{ fee.other_fee }}</td>
+                    <td class="text-end fw-bold">₹{{ fee.total_fee }}</td>
+                    <td class="text-end">
+                        <button class="btn btn-sm btn-outline-primary me-1"
+                                data-bs-toggle="modal"
+                                data-bs-target="#editFeeStructureModal"
+                                data-id="{{ fee.fee_structure_id }}"
+                                data-class="{{ fee.class_field.class_id }}"
+                                data-year="{{ fee.academic_year }}"
+                                data-tuition="{{ fee.tuition_fee }}"
+                                data-activity="{{ fee.activity_fee }}"
+                                data-transport="{{ fee.transport_fee }}"
+                                data-other="{{ fee.other_fee }}"
+                                data-total="{{ fee.total_fee }}">
+                            <i class="bi bi-pencil"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger"
+                                data-bs-toggle="modal"
+                                data-bs-target="#deleteFeeStructureModal"
+                                data-id="{{ fee.fee_structure_id }}"
+                                data-label="{{ fee.class_field.class_name }} – {{ fee.academic_year }}">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="9" class="text-center text-muted py-4">
+                        {% if search_q %}No fee structures found for "<strong>{{ search_q }}</strong>".{% else %}No fee structures added yet.{% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{# Pagination #}
+{% if page_obj.has_other_pages %}
+<nav class="mt-3">
+    <ul class="pagination pagination-sm">
+        {% if page_obj.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search_q %}&q={{ search_q }}{% endif %}">‹ Prev</a>
+            </li>
+        {% endif %}
+        {% for num in page_obj.paginator.page_range %}
+            <li class="page-item {% if num == page_obj.number %}active{% endif %}">
+                <a class="page-link" href="?page={{ num }}{% if search_q %}&q={{ search_q }}{% endif %}">{{ num }}</a>
+            </li>
+        {% endfor %}
+        {% if page_obj.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search_q %}&q={{ search_q }}{% endif %}">Next ›</a>
+            </li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+
+
+{# ── ADD MODAL ─────────────────────────────────────────────────────────── #}
+<div class="modal fade" id="addFeeStructureModal" tabindex="-1" aria-labelledby="addFeeStructureModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <form method="post" action="{% url 'fee_structure_list' %}">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="add">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addFeeStructureModalLabel">Add New Fee Structure</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        {{ add_form.class_field.label_tag }}
+                        {{ add_form.class_field }}
+                        {% if add_form.class_field.errors %}
+                            <div class="text-danger small mt-1">{{ add_form.class_field.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        {{ add_form.academic_year.label_tag }}
+                        {{ add_form.academic_year }}
+                        {% if add_form.academic_year.errors %}
+                            <div class="text-danger small mt-1">{{ add_form.academic_year.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                {{ add_form.tuition_fee.label_tag }}
+                                {{ add_form.tuition_fee }}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                {{ add_form.activity_fee.label_tag }}
+                                {{ add_form.activity_fee }}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                {{ add_form.transport_fee.label_tag }}
+                                {{ add_form.transport_fee }}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                {{ add_form.other_fee.label_tag }}
+                                {{ add_form.other_fee }}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        {{ add_form.total_fee.label_tag }}
+                        {{ add_form.total_fee }}
+                        {% if add_form.total_fee.errors %}
+                            <div class="text-danger small mt-1">{{ add_form.total_fee.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                    {% if add_form.non_field_errors %}
+                        <div class="text-danger small">{{ add_form.non_field_errors.0 }}</div>
+                    {% endif %}
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Fee Structure</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+
+{# ── EDIT MODAL ────────────────────────────────────────────────────────── #}
+<div class="modal fade" id="editFeeStructureModal" tabindex="-1" aria-labelledby="editFeeStructureModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <form method="post" id="editFeeStructureForm" action="">
+            {% csrf_token %}
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editFeeStructureModalLabel">Edit Fee Structure</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="editFeeStructureClass" class="form-label">Class</label>
+                        <select class="form-select" id="editFeeStructureClass" name="class_field" required>
+                            <option value="">— Select Class —</option>
+                            {% for cls in all_classes %}
+                                <option value="{{ cls.class_id }}">{{ cls.class_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editFeeStructureYear" class="form-label">Academic Year</label>
+                        <input type="text" class="form-control" id="editFeeStructureYear" name="academic_year" placeholder="e.g., 2024-2025" required>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="editFeeStructureTuition" class="form-label">Tuition Fee</label>
+                                <input type="number" class="form-control" id="editFeeStructureTuition" name="tuition_fee" step="0.01" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="editFeeStructureActivity" class="form-label">Activity Fee</label>
+                                <input type="number" class="form-control" id="editFeeStructureActivity" name="activity_fee" step="0.01" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="editFeeStructureTransport" class="form-label">Transport Fee</label>
+                                <input type="number" class="form-control" id="editFeeStructureTransport" name="transport_fee" step="0.01" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="editFeeStructureOther" class="form-label">Other Fee</label>
+                                <input type="number" class="form-control" id="editFeeStructureOther" name="other_fee" step="0.01" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editFeeStructureTotal" class="form-label">Total Fee</label>
+                        <input type="number" class="form-control" id="editFeeStructureTotal" name="total_fee" step="0.01" readonly required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Update Fee Structure</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+
+{# ── DELETE MODAL ──────────────────────────────────────────────────────── #}
+<div class="modal fade" id="deleteFeeStructureModal" tabindex="-1" aria-labelledby="deleteFeeStructureModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-sm">
+        <form method="post" id="deleteFeeStructureForm" action="">
+            {% csrf_token %}
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title" id="deleteFeeStructureModalLabel">Delete Fee Structure</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    Are you sure you want to delete <strong id="deleteFeeStructureLabel"></strong>?
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+
+{% block extra_js %}
+<script>
+    {% if add_form.errors %}
+        var addModal = new bootstrap.Modal(document.getElementById('addFeeStructureModal'));
+        addModal.show();
+    {% endif %}
+
+    function calculateTotal(tuitionId, activityId, transportId, otherId, totalId) {
+        var tuition = parseFloat(document.getElementById(tuitionId).value) || 0;
+        var activity = parseFloat(document.getElementById(activityId).value) || 0;
+        var transport = parseFloat(document.getElementById(transportId).value) || 0;
+        var other = parseFloat(document.getElementById(otherId).value) || 0;
+        document.getElementById(totalId).value = (tuition + activity + transport + other).toFixed(2);
+    }
+
+    function bindAutoTotal(tuitionId, activityId, transportId, otherId, totalId) {
+        [tuitionId, activityId, transportId, otherId].forEach(function (id) {
+            document.getElementById(id).addEventListener('input', function () {
+                calculateTotal(tuitionId, activityId, transportId, otherId, totalId);
+            });
+        });
+        calculateTotal(tuitionId, activityId, transportId, otherId, totalId);
+    }
+
+    bindAutoTotal('id_tuition_fee', 'id_activity_fee', 'id_transport_fee', 'id_other_fee', 'id_total_fee');
+    bindAutoTotal('editFeeStructureTuition', 'editFeeStructureActivity', 'editFeeStructureTransport', 'editFeeStructureOther', 'editFeeStructureTotal');
+
+    document.getElementById('editFeeStructureModal').addEventListener('show.bs.modal', function (event) {
+        var btn = event.relatedTarget;
+        document.getElementById('editFeeStructureClass').value = btn.getAttribute('data-class') || '';
+        document.getElementById('editFeeStructureYear').value = btn.getAttribute('data-year') || '';
+        document.getElementById('editFeeStructureTuition').value = btn.getAttribute('data-tuition') || '';
+        document.getElementById('editFeeStructureActivity').value = btn.getAttribute('data-activity') || '';
+        document.getElementById('editFeeStructureTransport').value = btn.getAttribute('data-transport') || '';
+        document.getElementById('editFeeStructureOther').value = btn.getAttribute('data-other') || '';
+        calculateTotal('editFeeStructureTuition', 'editFeeStructureActivity', 'editFeeStructureTransport', 'editFeeStructureOther', 'editFeeStructureTotal');
+        document.getElementById('editFeeStructureForm').action = '/admin/fee-structures/' + btn.getAttribute('data-id') + '/edit/';
+    });
+
+    document.getElementById('deleteFeeStructureModal').addEventListener('show.bs.modal', function (event) {
+        var btn = event.relatedTarget;
+        document.getElementById('deleteFeeStructureLabel').textContent = btn.getAttribute('data-label');
+        document.getElementById('deleteFeeStructureForm').action = '/admin/fee-structures/' + btn.getAttribute('data-id') + '/delete/';
+    });
+</script>
+{% endblock %}
